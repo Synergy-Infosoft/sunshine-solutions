@@ -81,8 +81,8 @@ export default function HomePage() {
     <div className="min-h-screen bg-gray-50">
       {/* Hero Banner */}
       <div className="bg-gradient-to-br from-blue-950 via-blue-900 to-blue-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 py-12 sm:py-16">
-          <div className="max-w-2xl">
+        <div className="max-w-7xl mx-auto px-6 py-16 sm:py-24 lg:py-32">
+          <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 bg-yellow-400 text-blue-900 text-xs font-bold px-3 py-1.5 rounded-full mb-4 uppercase tracking-wider">
               <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
               Bulk Hiring Active — 1000+ Openings
@@ -111,16 +111,16 @@ export default function HomePage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-10 pt-8 border-t border-blue-800">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-16 pt-12 border-t border-blue-800/50">
             {[
               { val: '18+', label: t('hero_stats_exp') },
               { val: '10K+', label: t('hero_stats_emp') },
               { val: '100+', label: t('hero_stats_clients') },
               { val: '11', label: t('hero_stats_states') },
             ].map(s => (
-              <div key={s.label} className="bg-blue-800/50 rounded-xl px-4 py-3 text-center">
-                <div className="text-yellow-400 font-black text-2xl">{s.val}</div>
-                <div className="text-blue-300 text-xs mt-0.5">{s.label}</div>
+              <div key={s.label} className="bg-blue-800/50 rounded-2xl px-6 py-5 text-center shadow-sm">
+                <div className="text-yellow-400 font-black text-3xl mb-1.5">{s.val}</div>
+                <div className="text-blue-200 text-sm font-medium">{s.label}</div>
               </div>
             ))}
           </div>
@@ -129,8 +129,8 @@ export default function HomePage() {
 
       {/* Search + Filter Bar */}
       <div className="bg-white border-b border-gray-200 sticky top-16 z-30 shadow-sm" id="jobs">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex gap-2">
+        <div className="max-w-7xl mx-auto px-6 py-5">
+          <div className="flex gap-4">
             <div className="flex-1 relative">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -183,7 +183,7 @@ export default function HomePage() {
 
           {/* Expanded Filters */}
           {showFilters && (
-            <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="mt-5 pt-5 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
               {/* Mobile location */}
               <div className="sm:hidden relative col-span-2">
                 <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -251,9 +251,9 @@ export default function HomePage() {
       </div>
 
       {/* Jobs Section */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-gray-800 text-lg">
+      <div className="max-w-7xl mx-auto px-6 py-12 sm:py-16 lg:py-20">
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="font-bold text-gray-800 text-2xl">
             {filtered.length} {filtered.length === 1 ? 'Job' : 'Jobs'} Found
           </h2>
           {hasFilters && (
@@ -264,12 +264,12 @@ export default function HomePage() {
         </div>
 
         {urgentJobs.length > 0 && (
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-              <h3 className="font-bold text-red-600 uppercase text-sm tracking-wider">Urgent Hiring</h3>
+          <div className="mb-12">
+            <div className="flex items-center gap-2 mb-5">
+              <span className="w-3.5 h-3.5 bg-red-500 rounded-full animate-pulse shadow-sm shadow-red-500/50"></span>
+              <h3 className="font-bold text-red-600 uppercase text-base tracking-wider">Urgent Hiring</h3>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
               {urgentJobs.map(job => <JobCard key={job.id} job={job} />)}
             </div>
           </div>
@@ -278,9 +278,9 @@ export default function HomePage() {
         {regularJobs.length > 0 && (
           <div>
             {urgentJobs.length > 0 && (
-              <h3 className="font-bold text-gray-600 uppercase text-sm tracking-wider mb-3">All Jobs</h3>
+              <h3 className="font-bold text-gray-600 uppercase text-base tracking-wider mb-5">All Jobs</h3>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
               {regularJobs.map(job => <JobCard key={job.id} job={job} />)}
             </div>
           </div>
