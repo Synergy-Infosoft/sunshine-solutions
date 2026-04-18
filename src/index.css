@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sun-gold: #ccb270;
+  --color-sun-navy: #423d85;
+  --color-sun-red: #d32c3d;
+  --color-sun-yellow: #ffd400;
+  --font-display: 'Teko', sans-serif;
+  --font-body: 'Chivo', sans-serif;
+}
+
+.shadow-solid {
+  box-shadow: 4px 4px 0px rgba(66, 61, 133, 1);
+}
+
+.shadow-solid-sm {
+  box-shadow: 2px 2px 0px rgba(66, 61, 133, 1);
+}
+
+.shadow-solid-hover {
+  box-shadow: 0px 0px 0px rgba(66, 61, 133, 1);
+  transform: translate(2px, 2px);
+}
+
+.bg-caution {
+  background: repeating-linear-gradient(
+    45deg,
+    #423d85,
+    #423d85 10px,
+    #ffd400 10px,
+    #ffd400 20px
+  );
+}
+
+.bg-caution-red {
+  background: repeating-linear-gradient(
+    45deg,
+    #d32c3d,
+    #d32c3d 10px,
+    #ffffff 10px,
+    #ffffff 20px
+  );
+}
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Chivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Pulse animation for urgent badge */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
