@@ -23,12 +23,12 @@ export default function Navbar() {
   if (isAdmin) return null;
 
   return (
-    <nav className="bg-sun-navy text-white sticky top-0 z-50 border-b-2 border-sun-gold/20">
+    <nav className="bg-blue-900 text-white sticky top-0 z-50 shadow-lg">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <img src="/logo.png" alt="Sunshine Solutions" className="h-12 sm:h-14 w-auto object-contain bg-white px-2 py-1 rounded-sm shadow-solid-sm" />
+            <img src="/logo.png" alt="Sunshine Solutions" className="h-12 sm:h-14 w-auto object-contain bg-white px-2 py-1 rounded" />
           </Link>
 
           {/* Desktop Links */}
@@ -37,7 +37,7 @@ export default function Navbar() {
               <Link
                 key={l.to}
                 to={l.to}
-                className={`font-display tracking-wide uppercase text-lg transition-colors duration-200 hover:text-sun-gold ${location.pathname === l.to ? 'text-sun-yellow border-b-2 border-sun-yellow pb-0.5' : 'text-white'}`}
+                className={`font-semibold text-sm transition-colors hover:text-yellow-300 ${location.pathname === l.to ? 'text-yellow-400 border-b-2 border-yellow-400 pb-0.5' : 'text-white'}`}
               >
                 {l.label}
               </Link>
@@ -48,15 +48,15 @@ export default function Navbar() {
           <div className="flex items-center gap-3">
             <button
               onClick={toggleLang}
-              className="flex items-center gap-1.5 text-sm bg-sun-navy hover:bg-sun-navy/80 px-3 py-1.5 rounded-sm transition-colors duration-200 border-2 border-sun-gold/40 hover:border-sun-gold hover:text-sun-gold cursor-pointer"
+              className="flex items-center gap-1.5 text-sm bg-blue-800 hover:bg-blue-700 px-3 py-1.5 rounded-full transition-colors border border-blue-600"
               title="Switch Language"
             >
               <Globe size={14} />
-              <span className="font-bold tracking-wide uppercase">{i18n.language === 'en' ? 'हिंदी' : 'English'}</span>
+              <span className="font-semibold">{i18n.language === 'en' ? 'हिंदी' : 'English'}</span>
             </button>
             <a
               href="tel:+919828377776"
-              className="hidden sm:flex items-center gap-1.5 bg-sun-yellow text-sun-navy font-display text-lg tracking-wide uppercase px-4 py-1.5 rounded-sm transition-all duration-150 border-2 border-sun-navy shadow-solid-sm hover:shadow-solid-hover hover:bg-sun-gold cursor-pointer"
+              className="hidden sm:flex items-center gap-1.5 bg-yellow-400 text-blue-900 font-bold text-sm px-3 py-1.5 rounded-full hover:bg-yellow-300 transition-colors"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
               Call Now
@@ -73,22 +73,22 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {open && (
-        <div className="md:hidden bg-sun-navy border-t-2 border-sun-gold/20 px-4 pb-4 pt-2">
+        <div className="md:hidden bg-blue-800 border-t border-blue-700 px-4 pb-4 pt-2">
           {links.map(l => (
             <Link
               key={l.to}
               to={l.to}
               onClick={() => setOpen(false)}
-              className={`block py-2.5 font-display text-xl uppercase tracking-wide border-b border-sun-gold/20 transition-colors duration-200 hover:text-sun-gold ${location.pathname === l.to ? 'text-sun-yellow' : 'text-white'}`}
+              className={`block py-2.5 font-semibold text-sm border-b border-blue-700 hover:text-yellow-300 transition-colors ${location.pathname === l.to ? 'text-yellow-400' : 'text-white'}`}
             >
               {l.label}
             </Link>
           ))}
           <a
             href="tel:+919828377776"
-            className="mt-4 flex items-center justify-center gap-2 bg-sun-yellow text-sun-navy font-display text-xl uppercase tracking-wide px-4 py-2 rounded-sm border-2 border-sun-navy shadow-solid-sm hover:shadow-solid-hover transition-all duration-150 hover:bg-sun-gold cursor-pointer"
+            className="mt-3 flex items-center justify-center gap-2 bg-yellow-400 text-blue-900 font-bold text-sm px-4 py-2.5 rounded-full"
           >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
             +91 9828377776
           </a>
         </div>
