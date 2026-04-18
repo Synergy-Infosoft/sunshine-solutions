@@ -1,11 +1,18 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Briefcase, Users, MessageSquare, TrendingUp, Clock, MapPin } from 'lucide-react';
 import { getJobs, getApplications, getEnquiries } from '../../store';
 
 export default function Dashboard() {
-  const jobs = getJobs();
-  const apps = getApplications();
-  const enqs = getEnquiries();
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [apps, setApps] = useState<any[]>([]);
+  const [enqs, setEnqs] = useState<any[]>([]);
+
+  useEffect(() => {
+    getJobs().then(setJobs);
+    getApplications().then(setApps);
+    getEnquiries().then(setEnqs);
+  }, []);
 
   const activeJobs = jobs.filter(j => j.status === 'Active').length;
   const expiredJobs = jobs.filter(j => j.status === 'Expired').length;

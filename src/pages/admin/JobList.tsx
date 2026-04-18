@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Edit, Trash2, Copy, Download, MapPin, Users } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { getJobs, deleteJob, saveJob, getApplications, genId } from '../../store';
+import CustomSelect from '../../components/CustomSelect';
 import { Job } from '../../types';
 
 const statusBadge = (s: string) => {
@@ -12,25 +13,33 @@ const statusBadge = (s: string) => {
 };
 
 export default function JobList() {
-  const [jobs, setJobs] = useState<Job[]>(getJobs());
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [filterStatus, setFilterStatus] = useState('');
   const [search, setSearch] = useState('');
-  const apps = getApplications();
+  const [apps, setApps] = useState<any[]>([]);
 
-  const refresh = () => setJobs(getJobs());
+  const refresh = async () => {
+    const [jobsData, appsData] = await Promise.all([getJobs(), getApplications()]);
+    setJobs(jobsData);
+    setApps(appsData);
+  };
 
-  const handleDelete = (id: string) => {
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  const handleDelete = async (id: string) => {
     if (confirm('Delete this job?')) {
-      deleteJob(id);
-      refresh();
+      await deleteJob(id);
+      await refresh();
     }
   };
 
-  const handleDuplicate = (job: Job) => {
+  const handleDuplicate = async (job: Job) => {
     const now = new Date();
     const expiry = new Date(now);
     expiry.setDate(expiry.getDate() + job.expiryDays);
-    saveJob({
+    await saveJob({
       ...job,
       id: genId(),
       title: `${job.title} (Copy)`,
@@ -38,24 +47,24 @@ export default function JobList() {
       expiresAt: expiry.toISOString(),
       status: 'Inactive',
     });
-    refresh();
+    await refresh();
   };
 
-  const handleToggleUrgent = (job: Job) => {
-    saveJob({ ...job, urgentHiring: !job.urgentHiring });
-    refresh();
+  const handleToggleUrgent = async (job: Job) => {
+    await saveJob({ ...job, urgentHiring: !job.urgentHiring });
+    await refresh();
   };
 
-  const handleToggleStatus = (job: Job) => {
+  const handleToggleStatus = async (job: Job) => {
     const now = new Date();
     const expiry = new Date(now);
     expiry.setDate(expiry.getDate() + job.expiryDays);
-    saveJob({
+    await saveJob({
       ...job,
       status: job.status === 'Active' ? 'Inactive' : 'Active',
       expiresAt: expiry.toISOString(),
     });
-    refresh();
+    await refresh();
   };
 
   const downloadApplicants = (job: Job) => {
@@ -77,7 +86,7 @@ export default function JobList() {
   };
 
   const filtered = jobs.filter(j => {
-    if (filterStatus && j.status !== filterStatus) return false;
+    if (filterStatus && filterStatus !== 'All' && j.status !== filterStatus) return false;
     if (search && !j.title.toLowerCase().includes(search.toLowerCase()) && !j.location.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
@@ -108,16 +117,12 @@ export default function JobList() {
           placeholder="Search by title or location..."
           className="flex-1 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        <select
-          value={filterStatus}
-          onChange={e => setFilterStatus(e.target.value)}
-          className="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-        >
-          <option value="">All Status</option>
-          <option value="Active">Active</option>
-          <option value="Inactive">Inactive</option>
-          <option value="Expired">Expired</option>
-        </select>
+        <CustomSelect
+          value={filterStatus || 'All'}
+          onChange={v => setFilterStatus(v === 'All' ? '' : v)}
+          options={[{value: 'All'}, {value: 'Active'}, {value: 'Inactive'}, {value: 'Expired'}]}
+          className="w-full sm:w-48 border border-gray-200 rounded-xl px-4 py-2 text-sm bg-white"
+        />
       </div>
 
       {/* Desktop Table */}
@@ -159,7 +164,7 @@ export default function JobList() {
                 </td>
                 <td className="px-4 py-3 text-center">
                   <span className="flex items-center justify-center gap-1 text-sm font-bold text-blue-700">
-                    <Users size={13} /> {appCount(job.id)}
+                    <Users size={13} /> {job.applicantCount || 0}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-center">
@@ -219,7 +224,7 @@ export default function JobList() {
             </div>
             <div className="flex items-center gap-3 text-xs text-gray-500 mb-3">
               <span>{job.jobType} • {job.shift}</span>
-              <span className="flex items-center gap-1"><Users size={11} /> {appCount(job.id)} applicants</span>
+              <span className="flex items-center gap-1"><Users size={11} /> {job.applicantCount || 0} applicants</span>
               {job.urgentHiring && <span className="bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-semibold">Urgent</span>}
             </div>
             <div className="flex gap-2">

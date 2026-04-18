@@ -27,6 +27,7 @@ export interface Job {
   expiresAt: string;
   description: string;
   openings: number;
+  applicantCount?: number;
 }
 
 export interface Application {

@@ -8,6 +8,8 @@ export default function ContactPage() {
   const [form, setForm] = useState({ name: '', phone: '', message: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -18,11 +20,32 @@ export default function ContactPage() {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    saveEnquiry({ id: genId(), name: form.name, phone: form.phone, message: form.message, createdAt: new Date().toISOString() });
-    setSubmitted(true);
+    
+    setIsSubmitting(true);
+    setSubmitError(null);
+    
+    try {
+      const result = await saveEnquiry({ 
+        id: genId(), 
+        name: form.name, 
+        phone: form.phone, 
+        message: form.message, 
+        createdAt: new Date().toISOString() 
+      });
+      
+      if (result.success) {
+        setSubmitted(true);
+      } else {
+        setSubmitError(result.message || 'Something went wrong. Please try again.');
+      }
+    } catch (err) {
+      setSubmitError('Failed to connect to server. Please check your internet.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleWhatsApp = () => {
@@ -146,12 +169,18 @@ export default function ContactPage() {
                 />
                 {errors.message && <p className="text-red-500 text-xs mt-1">{errors.message}</p>}
               </div>
-              <button
-                type="submit"
-                className="w-full bg-blue-900 text-white font-bold py-3.5 rounded-xl hover:bg-blue-800 transition-colors"
-              >
-                {t('contact_form_submit')}
-              </button>
+                {submitError && (
+                  <div className="bg-red-50 text-red-600 p-3 rounded-xl text-xs font-semibold mb-2">
+                    {submitError}
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`w-full bg-blue-900 text-white font-bold py-3.5 rounded-xl transition-colors ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-800'}`}
+                >
+                  {isSubmitting ? 'Sending...' : t('contact_form_submit')}
+                </button>
             </form>
           ) : (
             <div className="text-center py-10">

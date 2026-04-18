@@ -30,9 +30,15 @@ export default function AdminLayout() {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="min-h-screen bg-gray-50 flex overflow-hidden">
+      {/* Mobile Drawer Backdrop */}
+      <div 
+        className={`fixed inset-0 z-40 bg-blue-950/40 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${sideOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
+        onClick={() => setSideOpen(false)}
+      />
+
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-blue-950 text-white flex flex-col transition-transform duration-200 ${sideOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static lg:flex`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-blue-950 text-white flex flex-col transform transition-all duration-300 cubic-bezier(0.4, 0, 0.2, 1) ${sideOpen ? 'translate-x-0 shadow-2xl skew-x-0' : '-translate-x-full -skew-x-2'} lg:translate-x-0 lg:skew-x-0 lg:static lg:flex lg:shadow-none`}>
         {/* Logo */}
         <div className="p-5 border-b border-blue-800 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -90,15 +96,12 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      {/* Overlay */}
-      {sideOpen && (
-        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSideOpen(false)} />
-      )}
 
-      {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Bar */}
-        <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+
+      {/* Main Container */}
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+        {/* Top Header */}
+        <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-30 shadow-subtle">
           <button
             onClick={() => setSideOpen(true)}
             className="lg:hidden p-2 rounded-xl hover:bg-gray-100 transition-colors"

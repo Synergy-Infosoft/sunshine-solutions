@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Download, Phone, Clock, MessageCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { getEnquiries } from '../../store';
 import { Enquiry } from '../../types';
 
 export default function Enquiries() {
-  const [enquiries] = useState<Enquiry[]>(getEnquiries());
+  const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
+  
+  useEffect(() => {
+    getEnquiries().then(setEnquiries);
+  }, []);
   const [search, setSearch] = useState('');
 
   const filtered = enquiries.filter(e => {
@@ -31,8 +35,8 @@ export default function Enquiries() {
     <div className="max-w-5xl mx-auto space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-gray-800">Enquiries</h1>
-          <p className="text-gray-500 text-sm">{enquiries.length} total enquiries</p>
+          <h1 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Support Enquiries</h1>
+          <p className="text-gray-500 text-sm font-medium">Direct messages from the website's Contact Form.</p>
         </div>
         <button
           onClick={downloadAll}

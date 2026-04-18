@@ -9,30 +9,31 @@ interface Props {
   onClose: () => void;
 }
 
-const INDIAN_CITIES = [
-  'Jaipur', 'Jodhpur', 'Udaipur', 'Kota', 'Bhiwadi', 'Neemrana', 'Alwar', 'Ajmer',
-  'Delhi', 'Noida', 'Gurugram', 'Faridabad', 'Ghaziabad',
-  'Mumbai', 'Pune', 'Nashik', 'Aurangabad',
-  'Bengaluru', 'Mysuru', 'Hubli',
-  'Chennai', 'Coimbatore', 'Madurai',
-  'Hyderabad', 'Secunderabad',
-  'Kolkata', 'Howrah', 'Durgapur',
-  'Ahmedabad', 'Surat', 'Vadodara', 'Rajkot',
-  'Lucknow', 'Kanpur', 'Agra', 'Varanasi', 'Meerut',
-  'Patna', 'Gaya',
-  'Bhopal', 'Indore', 'Jabalpur',
-  'Raipur', 'Bhilai',
-  'Ranchi', 'Jamshedpur',
-  'Chandigarh', 'Ludhiana', 'Amritsar',
-];
+
 
 export default function ApplyModal({ job, onClose }: Props) {
   const { t } = useTranslation();
   const [form, setForm] = useState({ name: '', phone: '', location: '', experience: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [allCities, setAllCities] = useState<string[]>([]);
+
+  useState(() => {
+    fetch('https://raw.githubusercontent.com/sab99r/Indian-States-And-Districts/master/states-and-districts.json')
+      .then(r => r.json())
+      .then(data => {
+        const cList: string[] = [];
+        if (data && data.states) {
+          data.states.forEach((s: any) => {
+            if (s.districts) s.districts.forEach((d: string) => cList.push(d));
+          });
+          setAllCities(cList);
+        }
+      });
+  });
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -46,7 +47,7 @@ export default function ApplyModal({ job, onClose }: Props) {
   const handleCityInput = (val: string) => {
     setForm({ ...form, location: val });
     if (val.length >= 2) {
-      const filtered = INDIAN_CITIES.filter(c => c.toLowerCase().includes(val.toLowerCase()));
+      const filtered = allCities.filter(c => c.toLowerCase().includes(val.toLowerCase()));
       setCitySuggestions(filtered.slice(0, 6));
       setShowSuggestions(true);
     } else {
@@ -54,20 +55,27 @@ export default function ApplyModal({ job, onClose }: Props) {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    saveApplication({
-      id: genId(),
-      jobId: job.id,
-      jobTitle: job.title,
-      name: form.name,
-      phone: form.phone,
-      location: form.location,
-      experience: form.experience,
-      appliedAt: new Date().toISOString(),
-    });
-    setSubmitted(true);
+    setIsSubmitting(true);
+    try {
+      await saveApplication({
+        id: genId(),
+        jobId: job.id,
+        jobTitle: job.title,
+        name: form.name,
+        phone: form.phone,
+        location: form.location,
+        experience: form.experience,
+        appliedAt: new Date().toISOString(),
+      });
+      setSubmitted(true);
+    } catch (err) {
+      alert('Application failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleWhatsApp = () => {
@@ -162,9 +170,10 @@ export default function ApplyModal({ job, onClose }: Props) {
 
               <button
                 type="submit"
-                className="w-full bg-blue-900 text-white font-bold py-3.5 rounded-xl hover:bg-blue-800 transition-colors text-base"
+                disabled={isSubmitting}
+                className={`w-full bg-blue-900 text-white font-bold py-3.5 rounded-xl transition-all text-base ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-800'}`}
               >
-                {t('apply_submit')}
+                {isSubmitting ? 'Submitting...' : t('apply_submit')}
               </button>
             </form>
           ) : (

@@ -1,11 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Download, Phone, MapPin, Clock } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { getApplications } from '../../store';
 import { Application } from '../../types';
+import CustomSelect from '../../components/CustomSelect';
 
 export default function Applications() {
-  const [apps] = useState<Application[]>(getApplications());
+  const [apps, setApps] = useState<Application[]>([]);
+  
+  useEffect(() => {
+    getApplications().then(setApps);
+  }, []);
   const [search, setSearch] = useState('');
   const [jobFilter, setJobFilter] = useState('');
 
@@ -54,8 +59,8 @@ export default function Applications() {
     <div className="max-w-7xl mx-auto space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-gray-800">Applications</h1>
-          <p className="text-gray-500 text-sm">{apps.length} total applications</p>
+          <h1 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Candidate Applications</h1>
+          <p className="text-gray-500 text-sm font-medium">Job seeker applications submitted via the Job Portal.</p>
         </div>
         <div className="flex gap-2">
           <button onClick={downloadFiltered} className="flex items-center gap-2 bg-blue-900 text-white font-bold px-4 py-2.5 rounded-xl hover:bg-blue-800 transition-colors text-sm">
@@ -76,14 +81,12 @@ export default function Applications() {
           placeholder="Search by name, phone, or location..."
           className="flex-1 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        <select
+        <CustomSelect
           value={jobFilter}
-          onChange={e => setJobFilter(e.target.value)}
-          className="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-        >
-          <option value="">All Jobs</option>
-          {uniqueJobs.map(j => <option key={j} value={j}>{j}</option>)}
-        </select>
+          onChange={v => setJobFilter(v)}
+          options={[{value: '', label: 'All Jobs'}, ...uniqueJobs.map(j => ({value: j}))]}
+          className="w-full sm:w-64 border border-gray-200 rounded-xl px-4 py-2 text-sm bg-white"
+        />
       </div>
 
       {/* Desktop Table */}

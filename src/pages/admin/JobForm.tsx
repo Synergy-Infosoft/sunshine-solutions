@@ -3,37 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, MapPin } from 'lucide-react';
 import { getJob, saveJob, genId } from '../../store';
 import { Job, JobType, ShiftType } from '../../types';
+import CustomSelect from '../../components/CustomSelect';
 
-const INDIAN_CITIES = [
-  'Jaipur', 'Jodhpur', 'Udaipur', 'Kota', 'Bhiwadi', 'Neemrana', 'Alwar', 'Ajmer',
-  'Delhi', 'Noida', 'Gurugram', 'Faridabad', 'Ghaziabad',
-  'Mumbai', 'Pune', 'Nashik', 'Aurangabad',
-  'Bengaluru', 'Mysuru', 'Hubli',
-  'Chennai', 'Coimbatore', 'Madurai',
-  'Hyderabad', 'Secunderabad',
-  'Kolkata', 'Howrah', 'Durgapur',
-  'Ahmedabad', 'Surat', 'Vadodara', 'Rajkot',
-  'Lucknow', 'Kanpur', 'Agra', 'Varanasi', 'Meerut',
-  'Patna', 'Gaya', 'Bhopal', 'Indore', 'Jabalpur',
-  'Raipur', 'Bhilai', 'Ranchi', 'Jamshedpur',
-  'Chandigarh', 'Ludhiana', 'Amritsar',
-];
-
-const STATE_MAP: Record<string, string> = {
-  Jaipur: 'Rajasthan', Jodhpur: 'Rajasthan', Udaipur: 'Rajasthan', Kota: 'Rajasthan',
-  Bhiwadi: 'Rajasthan', Neemrana: 'Rajasthan', Alwar: 'Rajasthan', Ajmer: 'Rajasthan',
-  Delhi: 'Delhi', Noida: 'Uttar Pradesh', Gurugram: 'Haryana', Faridabad: 'Haryana', Ghaziabad: 'Uttar Pradesh',
-  Mumbai: 'Maharashtra', Pune: 'Maharashtra', Nashik: 'Maharashtra', Aurangabad: 'Maharashtra',
-  Bengaluru: 'Karnataka', Mysuru: 'Karnataka', Hubli: 'Karnataka',
-  Chennai: 'Tamil Nadu', Coimbatore: 'Tamil Nadu', Madurai: 'Tamil Nadu',
-  Hyderabad: 'Telangana', Secunderabad: 'Telangana',
-  Kolkata: 'West Bengal', Howrah: 'West Bengal', Durgapur: 'West Bengal',
-  Ahmedabad: 'Gujarat', Surat: 'Gujarat', Vadodara: 'Gujarat', Rajkot: 'Gujarat',
-  Lucknow: 'Uttar Pradesh', Kanpur: 'Uttar Pradesh', Agra: 'Uttar Pradesh', Varanasi: 'Uttar Pradesh', Meerut: 'Uttar Pradesh',
-  Patna: 'Bihar', Gaya: 'Bihar', Bhopal: 'Madhya Pradesh', Indore: 'Madhya Pradesh', Jabalpur: 'Madhya Pradesh',
-  Raipur: 'Chhattisgarh', Bhilai: 'Chhattisgarh', Ranchi: 'Jharkhand', Jamshedpur: 'Jharkhand',
-  Chandigarh: 'Punjab', Ludhiana: 'Punjab', Amritsar: 'Punjab',
-};
 
 const empty: Omit<Job, 'id' | 'createdAt' | 'expiresAt'> = {
   title: '',
@@ -63,13 +34,41 @@ export default function JobForm() {
   const [showCitySug, setShowCitySug] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const [allCities, setAllCities] = useState<string[]>([]);
+  const [dynamicStateMap, setDynamicStateMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetch('https://raw.githubusercontent.com/sab99r/Indian-States-And-Districts/master/states-and-districts.json')
+      .then(r => r.json())
+      .then(data => {
+        const cList: string[] = [];
+        const sMap: Record<string, string> = {};
+        if (data && data.states) {
+          data.states.forEach((s: any) => {
+            if (s.districts) {
+              s.districts.forEach((d: string) => {
+                cList.push(d);
+                sMap[d] = s.state;
+              });
+            }
+          });
+          setAllCities(cList);
+          setDynamicStateMap(sMap);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
   useEffect(() => {
     if (isEdit) {
-      const existing = getJob(id!);
-      if (existing) {
-        const { id: _id, createdAt: _c, expiresAt: _e, ...rest } = existing;
-        setForm(rest);
-      }
+      getJob(id!).then(existing => {
+        if (existing) {
+          const { id: _id, ...rest } = existing;
+          // Ensure benefits is defined
+          if (!rest.benefits) rest.benefits = { pf: true, esic: true, food: false, room: false, overtime: false };
+          setForm(rest as any);
+        }
+      });
     }
   }, [id]);
 
@@ -83,9 +82,9 @@ export default function JobForm() {
   };
 
   const handleCityInput = (val: string) => {
-    setForm({ ...form, location: val, state: STATE_MAP[val] || '' });
+    setForm({ ...form, location: val, state: dynamicStateMap[val] || '' });
     if (val.length >= 2) {
-      const f = INDIAN_CITIES.filter(c => c.toLowerCase().includes(val.toLowerCase()));
+      const f = allCities.filter(c => c.toLowerCase().includes(val.toLowerCase()));
       setCitySuggestions(f.slice(0, 6));
       setShowCitySug(true);
     } else {
@@ -94,7 +93,7 @@ export default function JobForm() {
   };
 
   const selectCity = (c: string) => {
-    setForm({ ...form, location: c, state: STATE_MAP[c] || '' });
+    setForm({ ...form, location: c, state: dynamicStateMap[c] || '' });
     setShowCitySug(false);
   };
 
@@ -138,11 +137,12 @@ export default function JobForm() {
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Job Type *</label>
-            <select value={form.jobType} onChange={e => setForm({ ...form, jobType: e.target.value as JobType })} className={inputCls('jobType')}>
-              <option value="Helper">Helper</option>
-              <option value="ITI">ITI</option>
-              <option value="Skilled">Skilled</option>
-            </select>
+            <CustomSelect
+              value={form.jobType}
+              onChange={v => setForm({ ...form, jobType: v as JobType })}
+              options={[{value: 'Helper'}, {value: 'ITI'}, {value: 'Skilled'}]}
+              className={inputCls('jobType').replace("focus:outline-none focus:ring-2 focus:ring-blue-500", "")}
+            />
           </div>
         </div>
 
@@ -196,11 +196,12 @@ export default function JobForm() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Shift</label>
-            <select value={form.shift} onChange={e => setForm({ ...form, shift: e.target.value as ShiftType })} className={inputCls('shift')}>
-              <option value="Day">Day</option>
-              <option value="Night">Night</option>
-              <option value="Rotational">Rotational</option>
-            </select>
+            <CustomSelect
+              value={form.shift}
+              onChange={v => setForm({ ...form, shift: v as ShiftType })}
+              options={[{value: 'Day'}, {value: 'Night'}, {value: 'Rotational'}]}
+              className={inputCls('shift').replace("focus:outline-none focus:ring-2 focus:ring-blue-500", "")}
+            />
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Total Openings</label>
@@ -241,10 +242,12 @@ export default function JobForm() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Status</label>
-            <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value as 'Active' | 'Inactive' })} className={inputCls('status')}>
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
+            <CustomSelect
+              value={form.status}
+              onChange={v => setForm({ ...form, status: v as 'Active' | 'Inactive' })}
+              options={[{value: 'Active'}, {value: 'Inactive'}]}
+              className={inputCls('status').replace("focus:outline-none focus:ring-2 focus:ring-blue-500", "")}
+            />
           </div>
           <div className="flex items-center gap-3 pt-5">
             <label className="relative inline-flex items-center cursor-pointer">

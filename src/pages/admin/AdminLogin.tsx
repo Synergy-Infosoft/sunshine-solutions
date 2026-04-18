@@ -11,13 +11,24 @@ export default function AdminLogin() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.username === ADMIN_USER && form.password === ADMIN_PASS) {
-      sessionStorage.setItem('ss_admin_auth', '1');
-      navigate('/admin/dashboard');
-    } else {
-      setError('Invalid username or password.');
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      });
+      const data = await res.json();
+      if (data.success) {
+        localStorage.setItem('admin_token', data.data.token);
+        sessionStorage.setItem('ss_admin_auth', '1');
+        navigate('/admin/dashboard');
+      } else {
+        setError(data.message || 'Invalid username or password.');
+      }
+    } catch {
+      setError('Server connection error. Please try again.');
     }
   };
 
@@ -80,7 +91,7 @@ export default function AdminLogin() {
           </form>
 
           <div className="mt-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
-            <p className="text-xs text-gray-400 text-center">Default: <span className="font-mono font-semibold text-gray-600">sunshine_admin / Admin@2024</span></p>
+            <p className="text-xs text-gray-400 text-center">Default: <span className="font-mono font-semibold text-gray-600">admin / admin123</span></p>
           </div>
         </div>
 

@@ -4,21 +4,9 @@ import { Search, MapPin, Filter, X, ChevronDown, ChevronUp } from 'lucide-react'
 import { getJobs } from '../store';
 import { JobType, ShiftType } from '../types';
 import JobCard from '../components/JobCard';
+import CustomSelect from '../components/CustomSelect';
 
-const INDIAN_CITIES = [
-  'Jaipur', 'Jodhpur', 'Udaipur', 'Kota', 'Bhiwadi', 'Neemrana', 'Alwar', 'Ajmer',
-  'Delhi', 'Noida', 'Gurugram', 'Faridabad', 'Ghaziabad',
-  'Mumbai', 'Pune', 'Nashik', 'Aurangabad',
-  'Bengaluru', 'Mysuru', 'Hubli',
-  'Chennai', 'Coimbatore', 'Madurai',
-  'Hyderabad', 'Secunderabad',
-  'Kolkata', 'Howrah', 'Durgapur',
-  'Ahmedabad', 'Surat', 'Vadodara', 'Rajkot',
-  'Lucknow', 'Kanpur', 'Agra', 'Varanasi', 'Meerut',
-  'Patna', 'Gaya', 'Bhopal', 'Indore', 'Jabalpur',
-  'Raipur', 'Bhilai', 'Ranchi', 'Jamshedpur',
-  'Chandigarh', 'Ludhiana', 'Amritsar',
-];
+
 
 const WHATSAPP_NUM = '919828377776';
 
@@ -34,12 +22,49 @@ export default function HomePage() {
   const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
   const [showCitySug, setShowCitySug] = useState(false);
 
-  const allJobs = getJobs().filter(j => j.status === 'Active');
+  // API State
+  const [allJobs, setAllJobs] = useState<any[]>([]);
+  const [allCities, setAllCities] = useState<string[]>([]);
+  const [dynamicStateMap, setDynamicStateMap] = useState<Record<string, string>>({});
+
+  // Fetch jobs dynamically on component load
+  useMemo(() => {
+    getJobs().then(jobs => {
+      setAllJobs(jobs.filter(j => j.status === 'Active' || j.status === 'active'));
+    });
+
+    // Fetch dynamic city list
+    fetch('https://raw.githubusercontent.com/sab99r/Indian-States-And-Districts/master/states-and-districts.json')
+      .then(r => r.json())
+      .then(data => {
+        const cList: string[] = [];
+        const sMap: Record<string, string> = {};
+        if (data && data.states) {
+          data.states.forEach((s: any) => {
+            if (s.state) cList.push(s.state);
+            if (s.districts) {
+              s.districts.forEach((d: string) => {
+                cList.push(d);
+                sMap[d] = s.state;
+              });
+            }
+          });
+          setAllCities(cList);
+          setDynamicStateMap(sMap);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   const filtered = useMemo(() => {
     return allJobs.filter(j => {
       if (search && !j.title.toLowerCase().includes(search.toLowerCase())) return false;
-      if (location && !j.location.toLowerCase().includes(location.toLowerCase()) && !j.state.toLowerCase().includes(location.toLowerCase())) return false;
+      if (location) {
+        const trueState = dynamicStateMap[j.location] || j.location;
+        if (!j.location.toLowerCase().includes(location.toLowerCase()) && !trueState.toLowerCase().includes(location.toLowerCase())) {
+          return false;
+        }
+      }
       if (jobType && j.jobType !== jobType) return false;
       if (shift && j.shift !== shift) return false;
       if (salaryMin && j.salaryMax < parseInt(salaryMin)) return false;
@@ -57,7 +82,7 @@ export default function HomePage() {
   const handleCityInput = (val: string) => {
     setLocation(val);
     if (val.length >= 2) {
-      const f = INDIAN_CITIES.filter(c => c.toLowerCase().includes(val.toLowerCase()));
+      const f = allCities.filter(c => c.toLowerCase().includes(val.toLowerCase()));
       setCitySuggestions(f.slice(0, 6));
       setShowCitySug(true);
     } else {
@@ -79,48 +104,84 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Banner */}
-      <div className="bg-gradient-to-br from-blue-950 via-blue-900 to-blue-800 text-white">
-        <div className="max-w-7xl mx-auto px-6 py-16 sm:py-24 lg:py-32">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 bg-yellow-400 text-blue-900 text-xs font-bold px-3 py-1.5 rounded-full mb-4 uppercase tracking-wider">
-              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-              Bulk Hiring Active — 1000+ Openings
+      {/* Premium Hero Section */}
+      <div className="relative bg-[#0B132B] overflow-hidden font-sans lg:min-h-[calc(100vh-64px)] flex flex-col justify-center">
+        {/* Background ambient glows */}
+        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-blue-500/20 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-[10%] right-[-10%] w-[500px] h-[500px] bg-yellow-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+        
+        <div className="max-w-7xl mx-auto px-6 py-12 lg:py-16 relative z-10 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+            
+            {/* Left Content */}
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-3 bg-white/5 border border-white/10 text-blue-200 text-xs font-semibold px-4 py-2 rounded-full mb-8 relative overflow-hidden group">
+                <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent opacity-50"></div>
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
+                </span>
+                <span className="tracking-widest uppercase">Actively Hiring — 1000+ Openings</span>
+              </div>
+              
+              <h1 className="text-4xl sm:text-5xl lg:text-7xl/none font-extrabold text-white tracking-tight mb-6">
+                Your Next Role in <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-amber-500">Industry</span> Awaits.
+              </h1>
+              
+              <p className="text-blue-100/70 text-lg sm:text-xl leading-relaxed mb-10 max-w-xl">
+                {t('hero_subtitle')} Discover unprecedented factory jobs, skilled trades, and manufacturing opportunities. Fast track your career with direct hiring.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-5">
+                <a
+                  href="#jobs"
+                  className="inline-flex items-center justify-center bg-white text-[#0B132B] font-bold px-8 py-4.5 rounded-2xl shadow-xl shadow-white/5 hover:bg-gray-100 hover:-translate-y-1 transition-all duration-300 text-base"
+                >
+                  {t('hero_btn_browse')}
+                  <svg className="w-5 h-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                </a>
+                <button
+                  onClick={handleWhatsApp}
+                  className="inline-flex items-center justify-center gap-2.5 bg-white/5 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 hover:border-white/20 font-bold px-8 py-4.5 rounded-2xl transition-all duration-300 text-base"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-green-400"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                  {t('hero_btn_whatsapp')}
+                </button>
+              </div>
             </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black leading-tight mb-3">
-              {t('hero_title')}
-            </h1>
-            <p className="text-blue-200 text-base sm:text-lg leading-relaxed mb-6">
-              {t('hero_subtitle')}
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <a
-                href="#jobs"
-                className="bg-yellow-400 text-blue-900 font-bold px-6 py-3 rounded-full hover:bg-yellow-300 transition-colors text-sm sm:text-base"
-              >
-                {t('hero_btn_browse')}
-              </a>
-              <button
-                onClick={handleWhatsApp}
-                className="flex items-center gap-2 bg-green-500 text-white font-bold px-6 py-3 rounded-full hover:bg-green-600 transition-colors text-sm sm:text-base"
-              >
-                <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                {t('hero_btn_whatsapp')}
-              </button>
+
+            {/* Right Content - Hero Image */}
+            <div className="relative lg:ml-auto w-full max-w-lg perspective-1000 flex justify-center">
+              <div className="relative rounded-[2rem] overflow-hidden shadow-2xl xl:rotate-2 hover:rotate-0 transition-transform duration-700 ease-out border-8 border-white/5 bg-white/5">
+                <img src="/hero_image.png" alt="Industrial Team" className="w-full h-auto object-cover block" />
+              </div>
+              
+              {/* Floating Stat Card */}
+              <div className="absolute -bottom-8 -left-2 sm:-left-8 bg-white/10 backdrop-blur-xl border border-white/20 p-5 rounded-2xl shadow-2xl flex items-center gap-5 translate-y-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-green-500/30">
+                  <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg>
+                </div>
+                <div>
+                  <div className="text-white font-black text-2xl tracking-tighter">10,000+</div>
+                  <div className="text-blue-200 text-sm font-semibold uppercase tracking-wider">Workers Placed</div>
+                </div>
+              </div>
             </div>
+
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-16 pt-12 border-t border-blue-800/50">
+          {/* Stats Row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-16 pt-8 border-t border-white/10">
             {[
               { val: '18+', label: t('hero_stats_exp') },
               { val: '10K+', label: t('hero_stats_emp') },
               { val: '100+', label: t('hero_stats_clients') },
               { val: '11', label: t('hero_stats_states') },
             ].map(s => (
-              <div key={s.label} className="bg-blue-800/50 rounded-2xl px-6 py-5 text-center shadow-sm">
-                <div className="text-yellow-400 font-black text-3xl mb-1.5">{s.val}</div>
-                <div className="text-blue-200 text-sm font-medium">{s.label}</div>
+              <div key={s.label} className="text-left py-2">
+                <div className="text-yellow-400 font-extrabold text-4xl mb-2">{s.val}</div>
+                <div className="text-blue-100/70 text-sm font-semibold uppercase tracking-wider">{s.label}</div>
               </div>
             ))}
           </div>
@@ -197,39 +258,35 @@ export default function HomePage() {
                 />
               </div>
 
-              <select
-                value={jobType}
-                onChange={e => setJobType(e.target.value as JobType | '')}
-                className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              >
-                <option value="">{t('filter_type')}: {t('filter_all')}</option>
-                <option value="Helper">Helper</option>
-                <option value="ITI">ITI</option>
-                <option value="Skilled">Skilled</option>
-              </select>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('filters.jobType', 'Job Type')}</span>
+                <CustomSelect
+                  value={jobType}
+                  onChange={v => setJobType(v as JobType | '')}
+                  options={[{value: '', label: 'All Types'}, {value: 'Helper'}, {value: 'ITI'}, {value: 'Skilled'}]}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 bg-white text-sm shadow-sm"
+                />
+              </div>
 
-              <select
-                value={shift}
-                onChange={e => setShift(e.target.value as ShiftType | '')}
-                className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              >
-                <option value="">{t('filter_shift')}: {t('filter_all')}</option>
-                <option value="Day">Day</option>
-                <option value="Night">Night</option>
-                <option value="Rotational">Rotational</option>
-              </select>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('filters.shift', 'Shift')}</span>
+                <CustomSelect
+                  value={shift}
+                  onChange={v => setShift(v as ShiftType | '')}
+                  options={[{value: '', label: 'All Shifts'}, {value: 'Day'}, {value: 'Night'}, {value: 'Rotational'}]}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 bg-white text-sm shadow-sm"
+                />
+              </div>
 
-              <select
-                value={salaryMin}
-                onChange={e => setSalaryMin(e.target.value)}
-                className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              >
-                <option value="">{t('filter_salary')}: {t('filter_all')}</option>
-                <option value="10000">Min ₹10,000</option>
-                <option value="15000">Min ₹15,000</option>
-                <option value="20000">Min ₹20,000</option>
-                <option value="25000">Min ₹25,000</option>
-              </select>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Salary</span>
+                <CustomSelect
+                  value={salaryMin}
+                  onChange={v => setSalaryMin(v)}
+                  options={[{value: '', label: 'Any'}, {value: '12000', label: '₹12,000+'}, {value: '15000', label: '₹15,000+'}, {value: '20000', label: '₹20,000+'}, {value: '25000', label: '₹25,000+'}]}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 bg-white text-sm shadow-sm"
+                />
+              </div>
 
               <div className="col-span-2 sm:col-span-1 lg:col-span-2 flex flex-wrap gap-2 items-center">
                 <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('filter_facilities')}:</span>
