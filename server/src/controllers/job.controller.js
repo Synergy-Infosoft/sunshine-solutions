@@ -3,19 +3,29 @@ import JobModel from '../models/job.model.js';
 import { ApiError, ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
-// Validation Schema (`backend-security-coder`)
-const jobSchema = z.object({
+// Validation Schema for Child Roles
+const jobRoleSchema = z.object({
   title: z.string().min(1, 'Title is required'),
-  company: z.string().min(1, 'Company is required'),
-  location: z.string().min(1, 'Location is required'),
-  salary: z.string().min(1, 'Salary is required'),
-  type: z.string().min(1, 'Type is required'),
-  posted_time: z.string().min(1, 'Posted time is required'),
-  description: z.string().min(1, 'Description is required'),
+  type: z.enum(['Helper', 'ITI', 'Skilled']).default('Helper'),
+  salary_min: z.number().int().positive().default(10000),
+  salary_max: z.number().int().positive().default(15000),
+  openings: z.number().int().positive().default(5),
+  shift: z.enum(['Day', 'Night', 'Rotational']).default('Day'),
+  description: z.string().optional(),
   requirements: z.array(z.string()).default([]),
   benefits: z.array(z.string()).default([]),
-  featured: z.boolean().default(false),
-  status: z.enum(['active', 'inactive', 'filled']).default('active')
+  urgent_hiring: z.boolean().default(false),
+  status: z.enum(['active', 'inactive']).default('active')
+});
+
+// Validation Schema for Parent Job Site
+const jobSchema = z.object({
+  company: z.string().min(1, 'Company is required'),
+  location: z.string().min(1, 'Location is required'),
+  contact_number: z.string().optional(),
+  whatsapp_number: z.string().optional(),
+  status: z.enum(['active', 'inactive']).default('active'),
+  roles: z.array(jobRoleSchema).min(1, 'At least one role is required')
 });
 
 /**
@@ -25,16 +35,7 @@ const jobSchema = z.object({
  */
 const getJobs = asyncHandler(async (req, res) => {
   const jobs = await JobModel.findAll();
-  
-  // Parse JSON strings back to arrays
-  const parsedJobs = jobs.map(job => ({
-    ...job,
-    featured: Boolean(job.featured),
-    requirements: typeof job.requirements === 'string' ? JSON.parse(job.requirements) : job.requirements,
-    benefits: typeof job.benefits === 'string' ? JSON.parse(job.benefits) : job.benefits
-  }));
-
-  res.status(200).json(new ApiResponse(200, parsedJobs, 'Jobs fetched successfully'));
+  res.status(200).json(new ApiResponse(200, jobs, 'Jobs fetched successfully'));
 });
 
 /**
@@ -48,10 +49,6 @@ const getJob = asyncHandler(async (req, res) => {
   if (!job) {
     throw new ApiError(404, 'Job not found');
   }
-
-  job.featured = Boolean(job.featured);
-  job.requirements = typeof job.requirements === 'string' ? JSON.parse(job.requirements) : job.requirements;
-  job.benefits = typeof job.benefits === 'string' ? JSON.parse(job.benefits) : job.benefits;
 
   res.status(200).json(new ApiResponse(200, job, 'Job fetched successfully'));
 });
@@ -71,10 +68,6 @@ const createJob = asyncHandler(async (req, res) => {
   const insertId = await JobModel.create(parsedData.data);
   const newJob = await JobModel.findById(insertId);
   
-  newJob.featured = Boolean(newJob.featured);
-  newJob.requirements = typeof newJob.requirements === 'string' ? JSON.parse(newJob.requirements) : newJob.requirements;
-  newJob.benefits = typeof newJob.benefits === 'string' ? JSON.parse(newJob.benefits) : newJob.benefits;
-
   res.status(201).json(new ApiResponse(201, newJob, 'Job created successfully'));
 });
 
@@ -94,9 +87,6 @@ const updateJob = asyncHandler(async (req, res) => {
 
   // Merge existing data with new data
   const mergedData = { ...job, ...parsedData.data };
-  
-  // Format for model (ensure featured is 0/1)
-  mergedData.featured = mergedData.featured ? 1 : 0;
   
   await JobModel.update(req.params.id, mergedData);
   const updatedJob = await JobModel.findById(req.params.id);

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import EnquiryModel from '../models/enquiry.model.js';
 import { ApiError, ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import sanitizeHtml from 'sanitize-html';
 
 const enquirySchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -22,7 +23,13 @@ const submitEnquiry = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Validation failed', parsedData.error.errors);
   }
 
-  await EnquiryModel.create(parsedData.data);
+  const sanitizedData = {
+    ...parsedData.data,
+    name: sanitizeHtml(parsedData.data.name, { allowedTags: [], allowedAttributes: {} }),
+    message: sanitizeHtml(parsedData.data.message, { allowedTags: [], allowedAttributes: {} }),
+  };
+
+  await EnquiryModel.create(sanitizedData);
 
   res.status(201).json(new ApiResponse(201, null, 'Enquiry submitted successfully! We will contact you soon.'));
 });

@@ -1,0 +1,39 @@
+name: 🚀 Deploy Sunshine Portal
+
+on:
+  push:
+    branches:
+      - main  # Trigger only when you push to the main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚚 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔐 SSH and Deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd ${{ secrets.REMOTE_TARGET }}
+            
+            # 1. Pull latest changes
+            git pull origin main
+            
+            # 2. Setup Frontend
+            npm install
+            npm run build
+            
+            # 3. Setup Backend
+            cd server
+            npm install
+            
+            # 4. Restart the server (using PM2 - recommended for production)
+            # This ensures your site stays up even if the server restarts
+            pm2 restart sunshine-backend || pm2 start src/index.js --name sunshine-backend

@@ -1,4 +1,34 @@
-import { Job, Application, Enquiry } from './types';
+import { Job, Application, Enquiry, JobRole } from './types';
+
+// City cache
+let cachedCities: string[] | null = null;
+let fetchingCities: Promise<string[]> | null = null;
+
+export async function getCities(): Promise<string[]> {
+  if (cachedCities) return cachedCities;
+  if (fetchingCities) return fetchingCities;
+  
+  fetchingCities = fetch('https://raw.githubusercontent.com/sab99r/Indian-States-And-Districts/master/states-and-districts.json')
+    .then(r => r.json())
+    .then(data => {
+      const cList: string[] = [];
+      if (data && data.states) {
+        data.states.forEach((s: any) => {
+          if (s.districts) s.districts.forEach((d: string) => cList.push(d));
+        });
+      }
+      cachedCities = cList;
+      fetchingCities = null;
+      return cList;
+    })
+    .catch(e => {
+      console.error('Failed to fetch cities', e);
+      fetchingCities = null;
+      return [];
+    });
+    
+  return fetchingCities;
+}
 
 // Admin authentication helpers
 const getHeaders = () => {
@@ -13,48 +43,31 @@ export async function getJobs(): Promise<Job[]> {
   try {
     const res = await fetch('/api/jobs');
     const json = await res.json();
-    return (json.data || []).map((j: any) => {
-      let min = 12000;
-      let max = 15000;
-      if (j.salary && typeof j.salary === 'string') {
-        const parts = j.salary.split('-');
-        if (parts.length === 2) {
-          min = parseInt(parts[0].replace(/[^0-9]/g, '')) || 12000;
-          max = parseInt(parts[1].replace(/[^0-9]/g, '')) || 15000;
-        }
-      }
-
-      // Convert array of benefits from backend to object
-      const benefitsArr = Array.isArray(j.benefits) ? j.benefits : [];
-      
-      return {
-        id: j.id.toString(),
-        title: j.title || 'Unknown Job',
-        salaryMin: min,
-        salaryMax: max,
-        location: j.location || '',
-        state: j.location || '', // Duplicate for now
-        jobType: (j.type === 'Helper' || j.type === 'ITI' || j.type === 'Skilled') ? j.type : 'Helper',
-        shift: 'Day', // Default shift since not in schema
-        benefits: {
-          pf: benefitsArr.includes('pf'),
-          esic: benefitsArr.includes('esic'),
-          food: benefitsArr.includes('food'),
-          room: benefitsArr.includes('room'),
-          overtime: benefitsArr.includes('overtime')
-        },
-        contactNumber: '+919828377776',
-        whatsappNumber: '919828377776',
-        status: (j.status === 'active' || j.status === 'Active') ? 'Active' : 'Inactive',
-        urgentHiring: Boolean(j.featured),
-        expiryDays: 15,
-        createdAt: j.created_at || new Date().toISOString(),
-        expiresAt: j.created_at || new Date().toISOString(),
-        description: j.description || '',
-        openings: 5,
-        applicantCount: j.applicant_count || 0
-      } as Job;
-    });
+    return (json.data || []).map((j: any) => ({
+      id: j.id.toString(),
+      company: j.company || 'Sunshine Solutions',
+      location: j.location || '',
+      contact_number: j.contact_number || '+919828377776',
+      whatsapp_number: j.whatsapp_number || '919828377776',
+      status: j.status || 'active',
+      applicant_count: j.applicant_count || 0,
+      createdAt: j.created_at || new Date().toISOString(),
+      updatedAt: j.updated_at || new Date().toISOString(),
+      roles: (j.roles || []).map((r: any) => ({
+        id: r.id.toString(),
+        title: r.title || 'Unknown Role',
+        type: r.type || 'Helper',
+        salary_min: r.salary_min || 10000,
+        salary_max: r.salary_max || 15000,
+        openings: r.openings || 5,
+        shift: r.shift || 'Day',
+        description: r.description || '',
+        requirements: Array.isArray(r.requirements) ? r.requirements : [],
+        benefits: Array.isArray(r.benefits) ? r.benefits : [],
+        urgent_hiring: Boolean(r.urgent_hiring),
+        status: r.status || 'active'
+      }))
+    })) as Job[];
   } catch (error) {
     console.error('Error fetching jobs:', error);
     return [];
@@ -68,42 +81,30 @@ export async function getJob(id: string): Promise<Job | undefined> {
     const j = json.data;
     if (!j) return undefined;
 
-    let min = 12000; let max = 15000;
-    if (j.salary) {
-      const parts = j.salary.split('-');
-      if (parts.length === 2) {
-        min = parseInt(parts[0].replace(/[^0-9]/g, '')) || 12000;
-        max = parseInt(parts[1].replace(/[^0-9]/g, '')) || 15000;
-      }
-    }
-    const benefitsArr = Array.isArray(j.benefits) ? j.benefits : [];
-    
     return {
       id: j.id.toString(),
-      title: j.title || '',
-      salaryMin: min,
-      salaryMax: max,
+      company: j.company || 'Sunshine Solutions',
       location: j.location || '',
-      state: j.location || '',
-      jobType: j.type,
-      shift: 'Day',
-      benefits: {
-        pf: benefitsArr.includes('pf'),
-        esic: benefitsArr.includes('esic'),
-        food: benefitsArr.includes('food'),
-        room: benefitsArr.includes('room'),
-        overtime: benefitsArr.includes('overtime')
-      },
-      contactNumber: '+919828377776',
-      whatsappNumber: '919828377776',
-      status: (j.status === 'active' || j.status === 'Active') ? 'Active' : 'Inactive',
-      urgentHiring: Boolean(j.featured),
-      expiryDays: 15,
+      contact_number: j.contact_number || '+919828377776',
+      whatsapp_number: j.whatsapp_number || '919828377776',
+      status: j.status || 'active',
+      applicant_count: j.applicant_count || 0,
       createdAt: j.created_at || new Date().toISOString(),
-      expiresAt: j.created_at || new Date().toISOString(),
-      description: j.description || '',
-      openings: 5,
-      applicantCount: j.applicant_count || 0
+      updatedAt: j.updated_at || new Date().toISOString(),
+      roles: (j.roles || []).map((r: any) => ({
+        id: r.id.toString(),
+        title: r.title || 'Unknown Role',
+        type: r.type || 'Helper',
+        salary_min: r.salary_min || 10000,
+        salary_max: r.salary_max || 15000,
+        openings: r.openings || 5,
+        shift: r.shift || 'Day',
+        description: r.description || '',
+        requirements: Array.isArray(r.requirements) ? r.requirements : [],
+        benefits: Array.isArray(r.benefits) ? r.benefits : [],
+        urgent_hiring: Boolean(r.urgent_hiring),
+        status: r.status || 'active'
+      }))
     } as Job;
   } catch (e) {
     return undefined;
@@ -111,21 +112,27 @@ export async function getJob(id: string): Promise<Job | undefined> {
 }
 
 export async function saveJob(job: Job) {
-  const isUpdate = !!job.id && job.id.length < 15; // Realistic auto-id check
+  const isUpdate = !!job.id && !isNaN(Number(job.id)); // Safer ID check
   
-  // Prepare data for backend (snake_case)
   const payload = {
-    title: job.title,
-    company: 'Sunshine Solutions',
+    company: job.company,
     location: job.location,
-    salary: `₹${job.salaryMin} - ₹${job.salaryMax}`,
-    type: job.jobType,
-    posted_time: 'Just now',
-    description: job.description,
-    requirements: [],
-    benefits: Object.entries(job.benefits).filter(([_, v]) => v).map(([k]) => k),
-    featured: job.urgentHiring,
-    status: job.status.toLowerCase()
+    contact_number: job.contact_number,
+    whatsapp_number: job.whatsapp_number,
+    status: job.status.toLowerCase(),
+    roles: job.roles.map(r => ({
+      title: r.title,
+      type: r.type,
+      salary_min: r.salary_min,
+      salary_max: r.salary_max,
+      openings: r.openings,
+      shift: r.shift,
+      description: r.description,
+      requirements: r.requirements,
+      benefits: r.benefits,
+      urgent_hiring: r.urgent_hiring,
+      status: r.status
+    }))
   };
 
   const url = isUpdate ? `/api/jobs/${job.id}` : '/api/jobs';
@@ -149,10 +156,12 @@ export async function deleteJob(id: string) {
 
 export async function saveApplication(app: Application) {
   const payload = {
-    job_id: parseInt(app.jobId) || 1,
+    role_id: parseInt(app.role_id.toString()),
     name: app.name,
     phone: app.phone,
+    location: app.location || 'Not specified',
     experience: app.experience || 'Not specified',
+    status: app.status || 'New'
   };
   const res = await fetch('/api/applications', {
     method: 'POST',
@@ -172,12 +181,15 @@ export async function getApplications(): Promise<Application[]> {
     }
     return (json.data || []).map((a: any) => ({
       id: a.id.toString(),
-      jobId: a.job_id?.toString() || '',
-      jobTitle: a.job_title || 'Unknown',
+      role_id: a.role_id?.toString() || '',
+      roleTitle: a.role_title || 'Unknown',
+      jobCompany: a.company || 'Unknown',
+      jobLocation: a.job_location || 'Unknown',
       name: a.name || '',
       phone: a.phone || '',
       location: a.location || 'Not Specified',
       experience: a.experience || '',
+      status: a.status || 'New',
       appliedAt: a.created_at || new Date().toISOString()
     }));
   } catch (e) {
@@ -187,7 +199,6 @@ export async function getApplications(): Promise<Application[]> {
 }
 
 export async function saveEnquiry(enq: Enquiry) {
-  // Only send fields the backend Zod schema expects
   const payload = {
     name: enq.name,
     phone: enq.phone,

@@ -1,43 +1,48 @@
 export type JobType = 'Helper' | 'ITI' | 'Skilled';
 export type ShiftType = 'Day' | 'Night' | 'Rotational';
-export type JobStatus = 'Active' | 'Inactive' | 'Expired';
+export type JobStatus = 'active' | 'inactive';
 
+// Represents a specific role inside a site
+export interface JobRole {
+  id?: string | number; // Can be empty when creating new
+  title: string;
+  type: JobType;
+  salary_min: number;
+  salary_max: number;
+  openings: number;
+  shift: ShiftType;
+  description: string;
+  requirements: string[];
+  benefits: string[];
+  urgent_hiring: boolean;
+  status: JobStatus;
+}
+
+// Represents the Parent Company / "Site"
 export interface Job {
   id: string;
-  title: string;
-  salaryMin: number;
-  salaryMax: number;
+  company: string;
   location: string;
-  state: string;
-  jobType: JobType;
-  shift: ShiftType;
-  benefits: {
-    pf: boolean;
-    esic: boolean;
-    food: boolean;
-    room: boolean;
-    overtime: boolean;
-  };
-  contactNumber: string;
-  whatsappNumber: string;
+  contact_number: string;
+  whatsapp_number: string;
   status: JobStatus;
-  urgentHiring: boolean;
-  expiryDays: number;
-  createdAt: string;
-  expiresAt: string;
-  description: string;
-  openings: number;
-  applicantCount?: number;
+  roles: JobRole[];
+  applicant_count?: number; // Total applications across all roles
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Application {
   id: string;
-  jobId: string;
-  jobTitle: string;
+  role_id: string | number;
+  roleTitle?: string;
+  jobCompany?: string;
+  jobLocation?: string;
   name: string;
   phone: string;
   location: string;
   experience: string;
+  status: 'New' | 'Called' | 'Selected' | 'Rejected';
   appliedAt: string;
 }
 

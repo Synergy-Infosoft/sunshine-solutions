@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Briefcase, Users, MessageSquare, TrendingUp, Clock, MapPin } from 'lucide-react';
+import { Briefcase, Users, MessageSquare, TrendingUp, Clock, Building2 } from 'lucide-react';
 import { getJobs, getApplications, getEnquiries } from '../../store';
 
 export default function Dashboard() {
@@ -14,9 +14,17 @@ export default function Dashboard() {
     getEnquiries().then(setEnqs);
   }, []);
 
-  const activeJobs = jobs.filter(j => j.status === 'Active').length;
-  const expiredJobs = jobs.filter(j => j.status === 'Expired').length;
-  const urgentJobs = jobs.filter(j => j.urgentHiring && j.status === 'Active').length;
+  const activeSites = jobs.filter(j => j.status === 'active').length;
+  
+  let totalRoles = 0;
+  let totalUrgentRoles = 0;
+  
+  jobs.forEach(site => {
+    if (site.status === 'active') {
+      totalRoles += (site.roles || []).length;
+      totalUrgentRoles += (site.roles || []).filter((r: any) => r.urgent_hiring).length;
+    }
+  });
 
   const today = new Date().toDateString();
   const todayApps = apps.filter(a => new Date(a.appliedAt).toDateString() === today).length;
@@ -25,17 +33,17 @@ export default function Dashboard() {
   const recentApps = apps.slice(0, 5);
   const recentEnqs = enqs.slice(0, 5);
 
-  const topLocations = jobs.reduce((acc: Record<string, number>, j) => {
-    acc[j.location] = (acc[j.location] || 0) + 1;
+  const topCompanies = jobs.reduce((acc: Record<string, number>, j) => {
+    acc[j.company] = (acc[j.company] || 0) + (j.roles?.length || 0);
     return acc;
   }, {});
-  const topLoc = Object.entries(topLocations).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const topCmp = Object.entries(topCompanies).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
   const statCards = [
-    { label: 'Total Jobs', val: jobs.length, sub: `${activeJobs} Active`, icon: Briefcase, color: 'bg-blue-600', to: '/admin/jobs' },
+    { label: 'Active Parent Sites', val: activeSites, sub: `${totalRoles} Total Job Roles`, icon: Building2, color: 'bg-blue-600', to: '/admin/jobs' },
     { label: 'Total Applications', val: apps.length, sub: `${todayApps} Today`, icon: Users, color: 'bg-green-600', to: '/admin/applications' },
     { label: 'Total Enquiries', val: enqs.length, sub: `${todayEnqs} Today`, icon: MessageSquare, color: 'bg-purple-600', to: '/admin/enquiries' },
-    { label: 'Urgent Hiring', val: urgentJobs, sub: `${expiredJobs} Expired`, icon: TrendingUp, color: 'bg-red-600', to: '/admin/jobs' },
+    { label: 'Urgent Roles', val: totalUrgentRoles, sub: `High Priority Fixes`, icon: TrendingUp, color: 'bg-red-600', to: '/admin/jobs' },
   ];
 
   return (
@@ -81,14 +89,16 @@ export default function Dashboard() {
             <div className="divide-y divide-gray-50">
               {recentApps.map(a => (
                 <div key={a.id} className="px-5 py-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="font-semibold text-gray-800 text-sm truncate">{a.name}</div>
-                    <div className="text-gray-400 text-xs">{a.jobTitle} • {a.location}</div>
+                    <div className="text-blue-600 font-medium text-xs mt-0.5 truncate">{a.roleTitle}</div>
+                    <div className="text-gray-400 text-xs truncate">at {a.jobCompany} ({a.jobLocation})</div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <div className="text-blue-600 text-xs font-semibold">{a.phone}</div>
-                    <div className="text-gray-400 text-xs flex items-center gap-1">
-                      <Clock size={11} /> {new Date(a.appliedAt).toLocaleDateString('en-IN')}
+                    <div className="text-xs font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-600 mb-1 inline-block">{a.status}</div>
+                    <div className="text-blue-600 text-xs font-semibold block">{a.phone}</div>
+                    <div className="text-gray-400 text-xs flex items-center justify-end gap-1 mt-0.5">
+                      <Clock size={11} /> {new Date(a.appliedAt).toLocaleDateString('en-IN', { month: 'short', day: '2-digit' })}
                     </div>
                   </div>
                 </div>
@@ -101,18 +111,18 @@ export default function Dashboard() {
         <div className="space-y-5">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100">
-              <h2 className="font-bold text-gray-800">Job Locations</h2>
+              <h2 className="font-bold text-gray-800">Clients by Roles count</h2>
             </div>
             <div className="p-4 space-y-2">
-              {topLoc.map(([loc, count]) => (
-                <div key={loc} className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-sm text-gray-600">
-                    <MapPin size={13} className="text-blue-500" /> {loc}
+              {topCmp.map(([cmp, count]) => (
+                <div key={cmp} className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-sm text-gray-600 font-medium">
+                    <Building2 size={13} className="text-blue-500" /> {cmp}
                   </span>
-                  <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{count}</span>
+                  <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{count} Roles</span>
                 </div>
               ))}
-              {topLoc.length === 0 && <p className="text-gray-400 text-sm text-center py-3">No data yet.</p>}
+              {topCmp.length === 0 && <p className="text-gray-400 text-sm text-center py-3">No data yet.</p>}
             </div>
           </div>
 
@@ -129,7 +139,7 @@ export default function Dashboard() {
                   <div key={e.id} className="px-4 py-2.5">
                     <div className="font-semibold text-gray-800 text-xs">{e.name}</div>
                     <div className="text-gray-400 text-xs">{e.phone}</div>
-                    <p className="text-gray-500 text-xs truncate">{e.message}</p>
+                    <p className="text-gray-500 text-xs truncate mt-0.5">{e.message}</p>
                   </div>
                 ))}
               </div>

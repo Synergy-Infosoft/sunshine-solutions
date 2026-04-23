@@ -12,12 +12,12 @@ export default function AdminLayout() {
 
   useEffect(() => {
     const auth = sessionStorage.getItem('ss_admin_auth');
-    if (!auth) navigate('/admin');
+    if (!auth) navigate('/admin/login');
   }, []);
 
   const logout = () => {
     sessionStorage.removeItem('ss_admin_auth');
-    navigate('/admin');
+    navigate('/admin/login');
   };
 
   const navItems = [

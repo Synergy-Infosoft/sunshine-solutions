@@ -36,10 +36,11 @@ export default function App() {
         <Route path="/contact" element={<PublicLayout><ContactPage /></PublicLayout>} />
 
         {/* Admin Routes */}
-        <Route path="/admin" element={<AdminLogin />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="jobs" index element={<JobList />} />
+          <Route path="jobs" element={<JobList />} />
           <Route path="jobs/new" element={<JobForm />} />
           <Route path="jobs/:id" element={<JobForm />} />
           <Route path="applications" element={<Applications />} />

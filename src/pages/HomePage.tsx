@@ -1,12 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, MapPin, Filter, X, ChevronDown, ChevronUp } from 'lucide-react';
-import { getJobs } from '../store';
-import { JobType, ShiftType } from '../types';
+import { Search, MapPin, Filter, X, ChevronDown, ChevronUp, Briefcase } from 'lucide-react';
+import { getJobs, getCities } from '../store';
+import { Job } from '../types';
 import JobCard from '../components/JobCard';
 import CustomSelect from '../components/CustomSelect';
-
-
 
 const WHATSAPP_NUM = '919828377776';
 
@@ -14,70 +12,62 @@ export default function HomePage() {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [location, setLocation] = useState('');
-  const [jobType, setJobType] = useState<JobType | ''>('');
-  const [shift, setShift] = useState<ShiftType | ''>('');
-  const [salaryMin, setSalaryMin] = useState('');
-  const [facilities, setFacilities] = useState({ pf: false, esic: false, food: false, room: false });
+  const [company, setCompany] = useState('');
+  const [roleTitle, setRoleTitle] = useState('');
+  
   const [showFilters, setShowFilters] = useState(false);
   const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
   const [showCitySug, setShowCitySug] = useState(false);
 
   // API State
-  const [allJobs, setAllJobs] = useState<any[]>([]);
+  const [allSites, setAllSites] = useState<Job[]>([]);
   const [allCities, setAllCities] = useState<string[]>([]);
-  const [dynamicStateMap, setDynamicStateMap] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch jobs dynamically on component load
-  useMemo(() => {
-    getJobs().then(jobs => {
-      setAllJobs(jobs.filter(j => j.status === 'Active' || j.status === 'active'));
-    });
-
-    // Fetch dynamic city list
-    fetch('https://raw.githubusercontent.com/sab99r/Indian-States-And-Districts/master/states-and-districts.json')
-      .then(r => r.json())
-      .then(data => {
-        const cList: string[] = [];
-        const sMap: Record<string, string> = {};
-        if (data && data.states) {
-          data.states.forEach((s: any) => {
-            if (s.state) cList.push(s.state);
-            if (s.districts) {
-              s.districts.forEach((d: string) => {
-                cList.push(d);
-                sMap[d] = s.state;
-              });
-            }
-          });
-          setAllCities(cList);
-          setDynamicStateMap(sMap);
-        }
+  useEffect(() => {
+    setIsLoading(true);
+    getJobs()
+      .then(jobs => {
+        setAllSites(jobs.filter(j => j.status === 'active'));
       })
-      .catch(console.error);
+      .finally(() => setIsLoading(false));
+
+    getCities().then(setAllCities);
   }, []);
 
+  // Filter derivations
+  const uniqueCompanies = useMemo(() => {
+    return Array.from(new Set(allSites.map(s => s.company))).sort();
+  }, [allSites]);
+
+  const uniqueRoles = useMemo(() => {
+    const roles = new Set<string>();
+    allSites.forEach(site => {
+      site.roles.forEach(r => roles.add(r.title));
+    });
+    return Array.from(roles).sort();
+  }, [allSites]);
+
   const filtered = useMemo(() => {
-    return allJobs.filter(j => {
-      if (search && !j.title.toLowerCase().includes(search.toLowerCase())) return false;
-      if (location) {
-        const trueState = dynamicStateMap[j.location] || j.location;
-        if (!j.location.toLowerCase().includes(location.toLowerCase()) && !trueState.toLowerCase().includes(location.toLowerCase())) {
-          return false;
-        }
+    return allSites.filter(site => {
+      if (search && !site.company.toLowerCase().includes(search.toLowerCase()) && !site.roles.some(r => r.title.toLowerCase().includes(search.toLowerCase()))) {
+        return false;
       }
-      if (jobType && j.jobType !== jobType) return false;
-      if (shift && j.shift !== shift) return false;
-      if (salaryMin && j.salaryMax < parseInt(salaryMin)) return false;
-      if (facilities.pf && !j.benefits.pf) return false;
-      if (facilities.esic && !j.benefits.esic) return false;
-      if (facilities.food && !j.benefits.food) return false;
-      if (facilities.room && !j.benefits.room) return false;
+      if (location && !site.location.toLowerCase().includes(location.toLowerCase())) {
+        return false;
+      }
+      if (company && site.company !== company) {
+        return false;
+      }
+      if (roleTitle && !site.roles.some(r => r.title === roleTitle)) {
+        return false;
+      }
       return true;
     });
-  }, [search, location, jobType, shift, salaryMin, facilities, allJobs.length]);
+  }, [search, location, company, roleTitle, allSites]);
 
-  const urgentJobs = filtered.filter(j => j.urgentHiring);
-  const regularJobs = filtered.filter(j => !j.urgentHiring);
+  const urgentSites = filtered.filter(s => s.roles.some(r => r.urgent_hiring));
+  const regularSites = filtered.filter(s => !s.roles.some(r => r.urgent_hiring));
 
   const handleCityInput = (val: string) => {
     setLocation(val);
@@ -91,11 +81,10 @@ export default function HomePage() {
   };
 
   const clearFilters = () => {
-    setSearch(''); setLocation(''); setJobType(''); setShift(''); setSalaryMin('');
-    setFacilities({ pf: false, esic: false, food: false, room: false });
+    setSearch(''); setLocation(''); setCompany(''); setRoleTitle('');
   };
 
-  const hasFilters = search || location || jobType || shift || salaryMin || Object.values(facilities).some(Boolean);
+  const hasFilters = search || location || company || roleTitle;
 
   const handleWhatsApp = () => {
     const msg = encodeURIComponent('Hi, I am looking for factory job opportunities. Please share available positions.');
@@ -121,7 +110,7 @@ export default function HomePage() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
                 </span>
-                <span className="tracking-widest uppercase">Actively Hiring — 1000+ Openings</span>
+                <span className="tracking-widest uppercase">Actively Hiring — Multi-Site Access</span>
               </div>
               
               <h1 className="text-4xl sm:text-5xl lg:text-7xl/none font-extrabold text-white tracking-tight mb-6">
@@ -198,7 +187,7 @@ export default function HomePage() {
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder={t('filter_search')}
+                placeholder="Search by company or role..."
                 className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -244,9 +233,10 @@ export default function HomePage() {
 
           {/* Expanded Filters */}
           {showFilters && (
-            <div className="mt-5 pt-5 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div className="mt-5 pt-5 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              
               {/* Mobile location */}
-              <div className="sm:hidden relative col-span-2">
+              <div className="sm:hidden relative">
                 <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
@@ -259,59 +249,34 @@ export default function HomePage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('filters.jobType', 'Job Type')}</span>
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Company</span>
                 <CustomSelect
-                  value={jobType}
-                  onChange={v => setJobType(v as JobType | '')}
-                  options={[{value: '', label: 'All Types'}, {value: 'Helper'}, {value: 'ITI'}, {value: 'Skilled'}]}
+                  value={company}
+                  onChange={v => setCompany(v)}
+                  options={[{value: '', label: 'All Companies'}, ...uniqueCompanies.map(c => ({value: c}))]}
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 bg-white text-sm shadow-sm"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('filters.shift', 'Shift')}</span>
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Job Role</span>
                 <CustomSelect
-                  value={shift}
-                  onChange={v => setShift(v as ShiftType | '')}
-                  options={[{value: '', label: 'All Shifts'}, {value: 'Day'}, {value: 'Night'}, {value: 'Rotational'}]}
+                  value={roleTitle}
+                  onChange={v => setRoleTitle(v)}
+                  options={[{value: '', label: 'All Roles'}, ...uniqueRoles.map(r => ({value: r}))]}
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 bg-white text-sm shadow-sm"
                 />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Salary</span>
-                <CustomSelect
-                  value={salaryMin}
-                  onChange={v => setSalaryMin(v)}
-                  options={[{value: '', label: 'Any'}, {value: '12000', label: '₹12,000+'}, {value: '15000', label: '₹15,000+'}, {value: '20000', label: '₹20,000+'}, {value: '25000', label: '₹25,000+'}]}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 bg-white text-sm shadow-sm"
-                />
-              </div>
-
-              <div className="col-span-2 sm:col-span-1 lg:col-span-2 flex flex-wrap gap-2 items-center">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('filter_facilities')}:</span>
-                {(['pf', 'esic', 'food', 'room'] as const).map(f => (
-                  <label key={f} className={`flex items-center gap-1 px-2.5 py-1 rounded-full border cursor-pointer text-xs font-semibold transition-colors ${facilities[f] ? 'bg-blue-900 text-white border-blue-900' : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'}`}>
-                    <input
-                      type="checkbox"
-                      checked={facilities[f]}
-                      onChange={e => setFacilities({ ...facilities, [f]: e.target.checked })}
-                      className="hidden"
-                    />
-                    {f.toUpperCase()}
-                  </label>
-                ))}
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Jobs Section */}
+      {/* Sites Section */}
       <div className="max-w-7xl mx-auto px-6 py-12 sm:py-16 lg:py-20">
         <div className="flex items-center justify-between mb-8">
           <h2 className="font-bold text-gray-800 text-2xl">
-            {filtered.length} {filtered.length === 1 ? 'Job' : 'Jobs'} Found
+            {isLoading ? 'Loading Sites...' : `${filtered.length} ${filtered.length === 1 ? 'Site' : 'Sites'} Found`}
           </h2>
           {hasFilters && (
             <button onClick={clearFilters} className="text-sm text-blue-600 font-semibold hover:underline flex items-center gap-1">
@@ -320,30 +285,43 @@ export default function HomePage() {
           )}
         </div>
 
-        {urgentJobs.length > 0 && (
+        {urgentSites.length > 0 && (
           <div className="mb-12">
             <div className="flex items-center gap-2 mb-5">
               <span className="w-3.5 h-3.5 bg-red-500 rounded-full animate-pulse shadow-sm shadow-red-500/50"></span>
-              <h3 className="font-bold text-red-600 uppercase text-base tracking-wider">Urgent Hiring</h3>
+              <h3 className="font-bold text-red-600 uppercase text-base tracking-wider">High Priority Sites</h3>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-              {urgentJobs.map(job => <JobCard key={job.id} job={job} />)}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
+              {urgentSites.map(site => <JobCard key={site.id} job={site} />)}
             </div>
           </div>
         )}
 
-        {regularJobs.length > 0 && (
+        {regularSites.length > 0 && (
           <div>
-            {urgentJobs.length > 0 && (
-              <h3 className="font-bold text-gray-600 uppercase text-base tracking-wider mb-5">All Jobs</h3>
+            {urgentSites.length > 0 && (
+              <h3 className="font-bold text-gray-600 uppercase text-base tracking-wider mb-5">All Sites</h3>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-              {regularJobs.map(job => <JobCard key={job.id} job={job} />)}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
+              {regularSites.map(site => <JobCard key={site.id} job={site} />)}
             </div>
           </div>
         )}
 
-        {filtered.length === 0 && (
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
+             {[1, 2, 3, 4, 5, 6].map(n => (
+               <div key={n} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 h-64 animate-pulse flex flex-col justify-between">
+                 <div>
+                   <div className="h-20 bg-gray-200 rounded-lg mb-4"></div>
+                   <div className="h-6 w-1/3 bg-gray-200 rounded mb-2"></div>
+                   <div className="h-4 w-1/2 bg-gray-200 rounded"></div>
+                 </div>
+                 <div className="h-10 bg-gray-200 rounded-xl"></div>
+               </div>
+             ))}
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-gray-300 mb-4">
               <Search size={60} className="mx-auto" />
@@ -357,7 +335,7 @@ export default function HomePage() {
               {t('filter_clear')}
             </button>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* WhatsApp Floating Button */}
